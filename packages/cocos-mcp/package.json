@@ -6,6 +6,19 @@
   "author": "cocos-mcp contributors",
   "editor": ">=3.8.0",
   "main": "./dist/main.js",
+  "panels": {
+    "default": {
+      "title": "MCP Bridge",
+      "type": "dockable",
+      "main": "./dist/panels/default",
+      "size": {
+        "min-width": 250,
+        "min-height": 200,
+        "width": 300,
+        "height": 250
+      }
+    }
+  },
   "contributions": {
     "scene": {
       "script": "./dist/scene.js"
@@ -21,16 +34,22 @@
         "description": "Stop the MCP TCP bridge server",
         "methods": ["stop"]
       },
-      "cocos-mcp:status": {
+      "cocos-mcp:open-panel": {
         "public": true,
-        "description": "Check if the MCP TCP bridge server is running",
-        "methods": ["status"]
+        "description": "Open MCP Bridge panel",
+        "methods": ["openPanel"]
+      },
+      "cocos-mcp:query-status": {
+        "public": true,
+        "description": "Query MCP bridge status",
+        "methods": ["queryStatus"]
       }
     },
     "menu": [
       {
-        "path": "i18n:menu.extension/MCP Bridge",
-        "message": "cocos-mcp:status"
+        "path": "i18n:menu.extension",
+        "label": "MCP Bridge",
+        "message": "cocos-mcp:open-panel"
       }
     ]
   }

@@ -258,7 +258,10 @@ module.exports = {
         stop() {
             stopServer();
         },
-        status() {
+        openPanel() {
+            Editor.Panel.open("cocos-mcp");
+        },
+        queryStatus() {
             return { running: !!server, port: getPort(), clients: activeSockets.size };
         },
     },

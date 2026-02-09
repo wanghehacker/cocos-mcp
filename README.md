@@ -41,22 +41,71 @@ cd python && uv run python cocos_mcp_server.py --host 127.0.0.1 --port 8787
 
 ## Claude Code Integration
 
-The project includes a `.mcp.json` file at the root. When you open this project directory in Claude Code, it will automatically discover the MCP server.
+Cocos MCP 完整支持 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) —— Anthropic 官方的 CLI 编程工具。连接后，Claude Code 可以直接通过自然语言操控 Cocos Creator 编辑器：创建/删除节点、修改属性、管理资源、搭建 UI、配置物理和动画等。
 
-You can also manually add the configuration to your Claude Code settings:
+### 自动发现
 
+项目根目录包含 `.mcp.json` 配置文件。在此目录下启动 Claude Code 时会自动发现并连接 MCP 服务器，无需额外配置。
+
+```sh
+cd /path/to/cocos-mcp
+claude
+```
+
+### 手动配置
+
+也可以将配置手动添加到 Claude Code 的设置中：
+
+**项目级别**（`.claude/settings.json`）：
 ```json
 {
   "mcpServers": {
     "cocos-mcp": {
       "command": "uv",
-      "args": ["run", "--directory", "python", "python", "cocos_mcp_server.py", "--port", "8787"]
+      "args": ["run", "--directory", "/absolute/path/to/cocos-mcp/python", "python", "cocos_mcp_server.py", "--port", "8787"]
     }
   }
 }
 ```
 
-For Cursor or other MCP clients, use the same configuration format in the appropriate settings file.
+**全局级别**（`~/.claude/settings.json`），适用于所有项目：
+```json
+{
+  "mcpServers": {
+    "cocos-mcp": {
+      "command": "uv",
+      "args": ["run", "--directory", "/absolute/path/to/cocos-mcp/python", "python", "cocos_mcp_server.py", "--port", "8787"]
+    }
+  }
+}
+```
+
+### 使用流程
+
+1. 启动 Cocos Creator 并打开包含 `cocos-mcp` 扩展的项目
+2. 确认编辑器控制台输出 `[cocos-mcp] TCP server listening on 127.0.0.1:8787`
+3. 在终端启动 Claude Code
+4. Claude Code 会自动连接 MCP 服务器，所有 43 个工具立即可用
+
+### 使用示例
+
+```
+> 列出当前场景的所有节点
+
+> 创建一个名为 Player 的节点，位置设为 (0, 1, 0)
+
+> 给 Player 节点添加一个 RigidBody 和 BoxCollider
+
+> 在场景中创建一个 Button，文字为"开始游戏"
+
+> 把 Player 节点保存为 prefab 到 db://assets/prefabs/Player.prefab
+
+> 查找项目中所有 prefab 资源
+```
+
+### 其他 MCP 客户端
+
+Cursor、Windsurf 等支持 MCP 协议的工具也可以使用相同的配置格式接入。
 
 ## Tools
 
