@@ -759,6 +759,61 @@ def build_server(host: str, port: int) -> FastMCP:
             "scene.configureParticleSystem", {"uuid": uuid, "props": props}
         )
 
+    # ------------------------------------------------------------------
+    # Prefab
+    # ------------------------------------------------------------------
+
+    @mcp.tool()
+    def editor_instantiate_prefab(
+        asset_uuid: str, parent_uuid: Optional[str] = None
+    ) -> Any:
+        """Instantiate a Prefab asset into the current scene.
+
+        Creates a new node in the scene from an existing Prefab asset.
+        Use assets_find with asset_type='cc.Prefab' to discover available
+        prefabs and their UUIDs.
+
+        Args:
+            asset_uuid: UUID of the Prefab asset to instantiate.
+            parent_uuid: Optional UUID of the parent node. If omitted the
+                         prefab instance is added under the scene root.
+        """
+        payload: Dict[str, Any] = {"assetUuid": asset_uuid}
+        if parent_uuid:
+            payload["parentUuid"] = parent_uuid
+        return client.request("editor.instantiatePrefab", payload)
+
+    @mcp.tool()
+    def editor_create_prefab(node_uuid: str, path: str) -> Any:
+        """Create a Prefab asset from an existing scene node.
+
+        Saves the node (and its children/components) as a .prefab asset
+        file in the project.
+
+        Args:
+            node_uuid: UUID of the scene node to save as a prefab.
+            path: Target db:// path for the prefab file, e.g.
+                  'db://assets/prefabs/MyPrefab.prefab'.
+        """
+        return client.request(
+            "editor.createPrefab", {"nodeUuid": node_uuid, "path": path}
+        )
+
+    @mcp.tool()
+    def scene_get_prefab_info(uuid: str) -> Any:
+        """Query whether a node is a Prefab instance and get its prefab metadata.
+
+        Returns a dict with:
+          - isPrefab (bool): whether the node is a prefab instance
+          - fileId (str|null): prefab internal file ID
+          - assetUuid (str|null): UUID of the source Prefab asset
+          - rootUuid (str|null): UUID of the prefab root node
+
+        Args:
+            uuid: UUID of the node to query.
+        """
+        return client.request("scene.getPrefabInfo", {"uuid": uuid})
+
     return mcp
 
 

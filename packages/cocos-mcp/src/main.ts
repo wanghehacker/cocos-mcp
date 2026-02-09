@@ -181,6 +181,20 @@ async function editorDispatch(method: string, params?: any): Promise<any> {
       return message.request("scene", "undo");
     case "redo":
       return message.request("scene", "redo");
+    case "instantiatePrefab":
+      if (!params?.assetUuid) {
+        throw new Error("editor.instantiatePrefab requires { assetUuid, parentUuid? }");
+      }
+      return message.request("scene", "create-node", {
+        parent: params.parentUuid || "",
+        assetUuid: params.assetUuid,
+        type: "cc.Prefab",
+      });
+    case "createPrefab":
+      if (!params?.nodeUuid || !params?.path) {
+        throw new Error("editor.createPrefab requires { nodeUuid, path }");
+      }
+      return message.request("scene", "create-prefab", params.nodeUuid, params.path);
     default:
       throw new Error(`Unknown editor method: ${method}`);
   }

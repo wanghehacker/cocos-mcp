@@ -572,6 +572,28 @@ async function configureParticleSystem(params: { uuid: string; props: Record<str
   return { ok: true };
 }
 
+// ---------------------------------------------------------------------------
+// Prefab methods
+// ---------------------------------------------------------------------------
+
+async function getPrefabInfo(params: { uuid: string }) {
+  const root = getSceneRoot();
+  const node = findNodeByUuid(root, params.uuid);
+  if (!node) {
+    throw new Error(`Node not found: ${params.uuid}`);
+  }
+  const prefab = (node as any)._prefab;
+  if (!prefab) {
+    return { isPrefab: false };
+  }
+  return {
+    isPrefab: true,
+    fileId: prefab.fileId || null,
+    assetUuid: prefab.asset?._uuid || prefab.asset?.uuid || null,
+    rootUuid: prefab.root?.uuid || null,
+  };
+}
+
 function load() {
   // Scene script loaded
 }
@@ -610,5 +632,7 @@ module.exports = {
     getMaterialProperty,
     addPhysicsBody,
     configureParticleSystem,
+    // Prefab
+    getPrefabInfo,
   },
 };

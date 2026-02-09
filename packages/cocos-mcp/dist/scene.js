@@ -562,6 +562,27 @@ async function configureParticleSystem(params) {
         ps.play();
     return { ok: true };
 }
+// ---------------------------------------------------------------------------
+// Prefab methods
+// ---------------------------------------------------------------------------
+async function getPrefabInfo(params) {
+    var _a, _b, _c;
+    const root = getSceneRoot();
+    const node = findNodeByUuid(root, params.uuid);
+    if (!node) {
+        throw new Error(`Node not found: ${params.uuid}`);
+    }
+    const prefab = node._prefab;
+    if (!prefab) {
+        return { isPrefab: false };
+    }
+    return {
+        isPrefab: true,
+        fileId: prefab.fileId || null,
+        assetUuid: ((_a = prefab.asset) === null || _a === void 0 ? void 0 : _a._uuid) || ((_b = prefab.asset) === null || _b === void 0 ? void 0 : _b.uuid) || null,
+        rootUuid: ((_c = prefab.root) === null || _c === void 0 ? void 0 : _c.uuid) || null,
+    };
+}
 function load() {
     // Scene script loaded
 }
@@ -598,6 +619,8 @@ module.exports = {
         getMaterialProperty,
         addPhysicsBody,
         configureParticleSystem,
+        // Prefab
+        getPrefabInfo,
     },
 };
 //# sourceMappingURL=scene.js.map

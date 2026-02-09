@@ -158,6 +158,20 @@ async function editorDispatch(method, params) {
             return message.request("scene", "undo");
         case "redo":
             return message.request("scene", "redo");
+        case "instantiatePrefab":
+            if (!(params === null || params === void 0 ? void 0 : params.assetUuid)) {
+                throw new Error("editor.instantiatePrefab requires { assetUuid, parentUuid? }");
+            }
+            return message.request("scene", "create-node", {
+                parent: params.parentUuid || "",
+                assetUuid: params.assetUuid,
+                type: "cc.Prefab",
+            });
+        case "createPrefab":
+            if (!(params === null || params === void 0 ? void 0 : params.nodeUuid) || !(params === null || params === void 0 ? void 0 : params.path)) {
+                throw new Error("editor.createPrefab requires { nodeUuid, path }");
+            }
+            return message.request("scene", "create-prefab", params.nodeUuid, params.path);
         default:
             throw new Error(`Unknown editor method: ${method}`);
     }

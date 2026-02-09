@@ -97,6 +97,11 @@ For Cursor or other MCP clients, use the same configuration format in the approp
 - `scene_add_physics_body` – Add RigidBody + Collider in one step
 - `scene_configure_particle_system` – Configure ParticleSystem on a node
 
+### Prefab
+- `editor_instantiate_prefab` – Instantiate a Prefab asset into the scene
+- `editor_create_prefab` – Create a Prefab asset from a scene node
+- `scene_get_prefab_info` – Query prefab metadata on a node
+
 ### Assets
 - `assets_find` – Search assets by glob pattern
 - `assets_get_info` – Get asset metadata by UUID
