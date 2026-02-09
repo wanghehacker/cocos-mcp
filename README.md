@@ -74,6 +74,29 @@ For Cursor or other MCP clients, use the same configuration format in the approp
 - `scene_get_component_props` – Read component properties
 - `scene_set_component_props` – Set component properties
 
+### Editor
+- `editor_save_scene` – Save the current scene
+- `editor_query_dirty` – Check if scene has unsaved changes
+- `editor_open_scene` – Open a scene by UUID
+- `editor_undo` – Undo last operation
+- `editor_redo` – Redo last undone operation
+
+### UI
+- `scene_create_ui_node` – Create a complete UI node (Button, Label, Sprite, Layout, etc.)
+- `scene_configure_widget` – Configure Widget alignment on a node
+- `scene_configure_layout` – Configure Layout component on a node
+
+### Animation
+- `scene_add_animation` – Add Animation component to a node
+- `scene_play_animation` – Play animation on a node
+- `scene_stop_animation` – Stop animation on a node
+
+### Rendering & Physics
+- `scene_set_material_property` – Set material uniform on MeshRenderer
+- `scene_get_material_property` – Read material uniform from MeshRenderer
+- `scene_add_physics_body` – Add RigidBody + Collider in one step
+- `scene_configure_particle_system` – Configure ParticleSystem on a node
+
 ### Assets
 - `assets_find` – Search assets by glob pattern
 - `assets_get_info` – Get asset metadata by UUID

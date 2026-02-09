@@ -493,6 +493,272 @@ def build_server(host: str, port: int) -> FastMCP:
             "assets.request", {"method": method, "params": params}
         )
 
+    # ------------------------------------------------------------------
+    # Editor operations (main process)
+    # ------------------------------------------------------------------
+
+    @mcp.tool()
+    def editor_save_scene() -> Any:
+        """Save the currently open scene in Cocos Creator.
+
+        Persists all unsaved changes to disk.
+        """
+        return client.request("editor.saveScene")
+
+    @mcp.tool()
+    def editor_query_dirty() -> Any:
+        """Check whether the current scene has unsaved changes.
+
+        Returns True if the scene has been modified since the last save.
+        """
+        return client.request("editor.queryDirty")
+
+    @mcp.tool()
+    def editor_open_scene(uuid: str) -> Any:
+        """Open a scene by its asset UUID.
+
+        Use assets_find with asset_type='cc.SceneAsset' to discover
+        available scenes and their UUIDs.
+
+        Args:
+            uuid: UUID of the scene asset to open.
+        """
+        return client.request("editor.openScene", {"uuid": uuid})
+
+    @mcp.tool()
+    def editor_undo() -> Any:
+        """Undo the last operation in the scene editor."""
+        return client.request("editor.undo")
+
+    @mcp.tool()
+    def editor_redo() -> Any:
+        """Redo the last undone operation in the scene editor."""
+        return client.request("editor.redo")
+
+    # ------------------------------------------------------------------
+    # UI convenience methods
+    # ------------------------------------------------------------------
+
+    @mcp.tool()
+    def scene_create_ui_node(
+        ui_type: str,
+        parent_uuid: Optional[str] = None,
+        name: Optional[str] = None,
+        props: Optional[dict] = None,
+    ) -> Any:
+        """Create a complete UI node with all required components in one step.
+
+        This is a convenience method that creates a Node with UITransform
+        and the appropriate UI component(s) already attached.
+
+        Supported types:
+          Label    - text display (props: string, fontSize, color)
+          Sprite   - image display
+          Button   - clickable button with child Label (props: string, fontSize)
+          Layout   - auto-layout container
+          ScrollView - scrollable area with Content child
+          EditBox  - text input field
+          Toggle   - checkbox/radio
+          Slider   - value slider
+          ProgressBar - progress indicator
+          RichText - rich text (props: string)
+
+        Args:
+            ui_type: One of the supported UI types listed above.
+            parent_uuid: UUID of the parent node. Defaults to scene root.
+            name: Display name for the node. Defaults to the type name.
+            props: Optional initial properties. Supported keys depend on
+                   the type (e.g. string, fontSize, color, contentSize).
+        """
+        payload: Dict[str, Any] = {"type": ui_type}
+        if parent_uuid:
+            payload["parentUuid"] = parent_uuid
+        if name:
+            payload["name"] = name
+        if props:
+            payload["props"] = props
+        return client.request("scene.createUINode", payload)
+
+    @mcp.tool()
+    def scene_configure_widget(uuid: str, props: dict) -> Any:
+        """Configure Widget alignment on a node (auto-adds Widget if missing).
+
+        Supported props:
+          isAlignLeft (bool), left (number),
+          isAlignRight (bool), right (number),
+          isAlignTop (bool), top (number),
+          isAlignBottom (bool), bottom (number),
+          isAlignHorizontalCenter (bool), horizontalCenter (number),
+          isAlignVerticalCenter (bool), verticalCenter (number)
+
+        Args:
+            uuid: UUID of the node.
+            props: Dict of Widget alignment properties.
+        """
+        return client.request(
+            "scene.configureWidget", {"uuid": uuid, "props": props}
+        )
+
+    @mcp.tool()
+    def scene_configure_layout(uuid: str, props: dict) -> Any:
+        """Configure Layout component on a node (auto-adds Layout if missing).
+
+        Supported props:
+          type (int): 0=NONE, 1=HORIZONTAL, 2=VERTICAL, 3=GRID
+          resizeMode (int): 0=NONE, 1=CONTAINER, 2=CHILDREN
+          spacingX (number), spacingY (number),
+          paddingLeft, paddingRight, paddingTop, paddingBottom (number)
+
+        Args:
+            uuid: UUID of the node.
+            props: Dict of Layout properties.
+        """
+        return client.request(
+            "scene.configureLayout", {"uuid": uuid, "props": props}
+        )
+
+    # ------------------------------------------------------------------
+    # Animation
+    # ------------------------------------------------------------------
+
+    @mcp.tool()
+    def scene_add_animation(uuid: str) -> Any:
+        """Add an Animation component to a node (or return existing one).
+
+        Args:
+            uuid: UUID of the node.
+        """
+        return client.request("scene.addAnimation", {"uuid": uuid})
+
+    @mcp.tool()
+    def scene_play_animation(
+        uuid: str,
+        clip_name: Optional[str] = None,
+        cross_fade: Optional[float] = None,
+    ) -> Any:
+        """Play an animation on a node's Animation component.
+
+        Args:
+            uuid: UUID of the node with an Animation component.
+            clip_name: Name of the clip to play. If omitted, plays the
+                       default clip.
+            cross_fade: If provided along with clip_name, cross-fades to
+                        the clip over this duration in seconds.
+        """
+        payload: Dict[str, Any] = {"uuid": uuid}
+        if clip_name:
+            payload["clipName"] = clip_name
+        if cross_fade is not None:
+            payload["crossFade"] = cross_fade
+        return client.request("scene.playAnimation", payload)
+
+    @mcp.tool()
+    def scene_stop_animation(uuid: str) -> Any:
+        """Stop all animations on a node's Animation component.
+
+        Args:
+            uuid: UUID of the node.
+        """
+        return client.request("scene.stopAnimation", {"uuid": uuid})
+
+    # ------------------------------------------------------------------
+    # Rendering & Physics
+    # ------------------------------------------------------------------
+
+    @mcp.tool()
+    def scene_set_material_property(
+        uuid: str,
+        prop_name: str,
+        value: Any,
+        material_index: int = 0,
+    ) -> Any:
+        """Set a material uniform property on a node's MeshRenderer.
+
+        For color values, pass a list of [r, g, b, a] (0-255).
+
+        Args:
+            uuid: UUID of the node with a MeshRenderer.
+            prop_name: Shader uniform name (e.g. 'mainColor', 'albedo').
+            value: The value to set (number, list, etc.).
+            material_index: Index of the material slot (default 0).
+        """
+        return client.request(
+            "scene.setMaterialProperty",
+            {
+                "uuid": uuid,
+                "materialIndex": material_index,
+                "propName": prop_name,
+                "value": value,
+            },
+        )
+
+    @mcp.tool()
+    def scene_get_material_property(
+        uuid: str, prop_name: str, material_index: int = 0
+    ) -> Any:
+        """Read a material uniform property from a node's MeshRenderer.
+
+        Args:
+            uuid: UUID of the node with a MeshRenderer.
+            prop_name: Shader uniform name to read.
+            material_index: Index of the material slot (default 0).
+        """
+        return client.request(
+            "scene.getMaterialProperty",
+            {
+                "uuid": uuid,
+                "materialIndex": material_index,
+                "propName": prop_name,
+            },
+        )
+
+    @mcp.tool()
+    def scene_add_physics_body(
+        uuid: str,
+        collider_type: str,
+        body_type: str = "dynamic",
+        collider_params: Optional[dict] = None,
+    ) -> Any:
+        """Add a RigidBody and Collider to a node in one step.
+
+        Args:
+            uuid: UUID of the node.
+            collider_type: 'box', 'sphere', 'capsule', 'cylinder', or 'mesh'.
+            body_type: 'dynamic' (default), 'static', or 'kinematic'.
+            collider_params: Optional dict with collider settings:
+                size ([x,y,z]) for box, radius (number) for sphere,
+                radius + height for capsule, center ([x,y,z]),
+                isTrigger (bool).
+        """
+        payload: Dict[str, Any] = {
+            "uuid": uuid,
+            "bodyType": body_type,
+            "colliderType": collider_type,
+        }
+        if collider_params:
+            payload["colliderParams"] = collider_params
+        return client.request("scene.addPhysicsBody", payload)
+
+    @mcp.tool()
+    def scene_configure_particle_system(uuid: str, props: dict) -> Any:
+        """Configure a ParticleSystem on a node (auto-adds if missing).
+
+        Supported props:
+          duration (number), loop (bool), playOnAwake (bool),
+          capacity (int),
+          startLifetime (number), startSpeed (number), startSize (number),
+          startColor ([r,g,b,a] 0-255),
+          gravityModifier (number), rateOverTime (number),
+          play (bool) - if true, starts playback immediately
+
+        Args:
+            uuid: UUID of the node.
+            props: Dict of particle system properties.
+        """
+        return client.request(
+            "scene.configureParticleSystem", {"uuid": uuid, "props": props}
+        )
+
     return mcp
 
 

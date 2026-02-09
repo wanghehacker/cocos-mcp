@@ -62,6 +62,9 @@ async function dispatch(method, params) {
     if (method.startsWith("assets.")) {
         return assetsDispatch(method.slice("assets.".length), params);
     }
+    if (method.startsWith("editor.")) {
+        return editorDispatch(method.slice("editor.".length), params);
+    }
     throw new Error(`Unknown method: ${method}`);
 }
 async function execute(params) {
@@ -135,6 +138,29 @@ async function requestAssetDB(message, assetdb, method, params, fnName) {
         throw lastErr;
     }
     throw new Error("AssetDB API not available");
+}
+async function editorDispatch(method, params) {
+    const message = Editor === null || Editor === void 0 ? void 0 : Editor.Message;
+    if (!(message === null || message === void 0 ? void 0 : message.request)) {
+        throw new Error("Editor.Message.request is not available");
+    }
+    switch (method) {
+        case "saveScene":
+            return message.request("scene", "save-scene");
+        case "queryDirty":
+            return message.request("scene", "query-dirty");
+        case "openScene":
+            if (!(params === null || params === void 0 ? void 0 : params.uuid)) {
+                throw new Error("editor.openScene requires { uuid }");
+            }
+            return message.request("scene", "open-scene", params.uuid);
+        case "undo":
+            return message.request("scene", "undo");
+        case "redo":
+            return message.request("scene", "redo");
+        default:
+            throw new Error(`Unknown editor method: ${method}`);
+    }
 }
 function startServer() {
     if (server) {

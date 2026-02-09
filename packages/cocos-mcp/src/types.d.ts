@@ -33,5 +33,17 @@ declare module "cc" {
     z: number;
     constructor(x?: number, y?: number, z?: number);
   }
+  export class Color {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+    constructor(r?: number, g?: number, b?: number, a?: number);
+  }
+  export class Size {
+    width: number;
+    height: number;
+    constructor(width?: number, height?: number);
+  }
   export function instantiate(original: any): any;
 }
