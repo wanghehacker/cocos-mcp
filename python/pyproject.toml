@@ -3,9 +3,25 @@ name = "cocos-mcp-server"
 version = "0.1.0"
 description = "MCP server bridge for Cocos Creator 3.8.x"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
-    "mcp>=1.0.0",
+    "mcp[cli]>=1.0.0",
 ]
 
 [project.scripts]
-cocos-mcp-server = "cocos_mcp_server:main"
+cocos-mcp-server = "cocos_mcp_server.server:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[project.urls]
+"Homepage" = "https://github.com/anthropics/cocos-mcp"

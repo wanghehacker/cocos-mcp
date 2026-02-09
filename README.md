@@ -36,12 +36,18 @@ cd python && uv sync
 
 ## Run MCP Server
 ```sh
-cd python && uv run python cocos_mcp_server.py --host 127.0.0.1 --port 8787
+cd python && uv run cocos-mcp-server --host 127.0.0.1 --port 8787
 ```
 
 ## Claude Code Integration
 
 Cocos MCP 完整支持 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) —— Anthropic 官方的 CLI 编程工具。连接后，Claude Code 可以直接通过自然语言操控 Cocos Creator 编辑器：创建/删除节点、修改属性、管理资源、搭建 UI、配置物理和动画等。
+
+### 快速添加（发布到 PyPI 后）
+
+```sh
+claude mcp add cocos uvx cocos-mcp-server -- --port 8787
+```
 
 ### 自动发现
 
@@ -62,7 +68,7 @@ claude
   "mcpServers": {
     "cocos-mcp": {
       "command": "uv",
-      "args": ["run", "--directory", "/absolute/path/to/cocos-mcp/python", "python", "cocos_mcp_server.py", "--port", "8787"]
+      "args": ["run", "--directory", "/absolute/path/to/cocos-mcp/python", "cocos-mcp-server", "--port", "8787"]
     }
   }
 }
@@ -74,7 +80,7 @@ claude
   "mcpServers": {
     "cocos-mcp": {
       "command": "uv",
-      "args": ["run", "--directory", "/absolute/path/to/cocos-mcp/python", "python", "cocos_mcp_server.py", "--port", "8787"]
+      "args": ["run", "--directory", "/absolute/path/to/cocos-mcp/python", "cocos-mcp-server", "--port", "8787"]
     }
   }
 }

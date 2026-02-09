@@ -2,7 +2,7 @@
   "mcpServers": {
     "cocos-mcp": {
       "command": "uv",
-      "args": ["run", "--directory", "python", "python", "cocos_mcp_server.py", "--port", "8787"]
+      "args": ["run", "--directory", "python", "cocos-mcp-server", "--port", "8787"]
     }
   }
 }
