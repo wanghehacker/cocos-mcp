@@ -75,8 +75,10 @@ async function execute(params) {
         return sceneDispatch("execute", params);
     }
     if (params.scope === "main") {
+        // Use AsyncFunction to support top-level await in user code
         // eslint-disable-next-line no-new-func
-        const fn = new Function("Editor", "args", params.code);
+        const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+        const fn = new AsyncFunction("Editor", "args", params.code);
         return fn(Editor, params.args || []);
     }
     throw new Error(`Unknown execute scope: ${params.scope}`);
@@ -94,50 +96,125 @@ async function sceneDispatch(method, params) {
 }
 async function assetsDispatch(method, params) {
     const message = Editor === null || Editor === void 0 ? void 0 : Editor.Message;
-    const assetdb = (Editor === null || Editor === void 0 ? void 0 : Editor.AssetDB) || (Editor === null || Editor === void 0 ? void 0 : Editor.assetdb);
-    if (method === "request") {
-        if (!params || typeof params.method !== "string") {
-            throw new Error("assets.request requires { method, params? }");
+    if (!(message === null || message === void 0 ? void 0 : message.request)) {
+        throw new Error("Editor.Message.request is not available");
+    }
+    switch (method) {
+        case "find": {
+            // query-assets expects (pattern: string)
+            const pattern = (params === null || params === void 0 ? void 0 : params.pattern) || "db://assets/**";
+            const results = await message.request("asset-db", "query-assets", pattern);
+            // Apply optional type filter on the client side
+            if ((params === null || params === void 0 ? void 0 : params.type) && Array.isArray(results)) {
+                return results.filter((a) => a.type === params.type);
+            }
+            return results;
         }
-        return requestAssetDB(message, assetdb, params.method, params.params);
-    }
-    const mapping = {
-        find: { msg: "query-assets", fn: "queryAssets" },
-        getInfo: { msg: "query-asset-info", fn: "queryAssetInfo" },
-        create: { msg: "create-asset", fn: "createAsset" },
-        import: { msg: "import-asset", fn: "importAsset" },
-        move: { msg: "move-asset", fn: "moveAsset" },
-        rename: { msg: "rename-asset", fn: "renameAsset" },
-        delete: { msg: "delete-asset", fn: "deleteAsset" },
-        getDependencies: { msg: "query-deps", fn: "queryDeps" },
-        reveal: { msg: "reveal-in-explorer", fn: "revealInExplorer" },
-    };
-    const entry = mapping[method];
-    if (!entry) {
-        return requestAssetDB(message, assetdb, method, params);
-    }
-    return requestAssetDB(message, assetdb, entry.msg, params, entry.fn);
-}
-async function requestAssetDB(message, assetdb, method, params, fnName) {
-    let lastErr = null;
-    if (message === null || message === void 0 ? void 0 : message.request) {
-        try {
-            return await message.request("asset-db", method, params);
+        case "getInfo": {
+            // query-asset-info expects (uuid: string)
+            if (!(params === null || params === void 0 ? void 0 : params.uuid)) {
+                throw new Error("assets.getInfo requires { uuid }");
+            }
+            return message.request("asset-db", "query-asset-info", params.uuid);
         }
-        catch (err) {
-            lastErr = err;
+        case "create": {
+            // create-asset expects (url: string, content?: string)
+            if (!(params === null || params === void 0 ? void 0 : params.path)) {
+                throw new Error("assets.create requires { path, content? }");
+            }
+            return message.request("asset-db", "create-asset", params.path, params.content || null);
         }
+        case "import": {
+            // import-asset expects (absoluteFilePath: string, targetDbUrl: string)
+            if (!(params === null || params === void 0 ? void 0 : params.filePath) || !(params === null || params === void 0 ? void 0 : params.targetDir)) {
+                throw new Error("assets.import requires { filePath, targetDir }");
+            }
+            // Build target url: targetDir + "/" + filename
+            const fileName = params.filePath.replace(/\\/g, "/").split("/").pop();
+            const targetUrl = params.targetDir.replace(/\/$/, "") + "/" + fileName;
+            return message.request("asset-db", "import-asset", params.filePath, targetUrl);
+        }
+        case "move": {
+            // move-asset expects (sourceUrl: string, targetUrl: string)
+            // We accept uuid + newPath, resolve uuid to url first
+            if (!(params === null || params === void 0 ? void 0 : params.uuid) || !(params === null || params === void 0 ? void 0 : params.newPath)) {
+                throw new Error("assets.move requires { uuid, newPath }");
+            }
+            const sourceUrl = await message.request("asset-db", "query-url", params.uuid);
+            if (!sourceUrl) {
+                throw new Error(`Cannot resolve URL for asset: ${params.uuid}`);
+            }
+            return message.request("asset-db", "move-asset", sourceUrl, params.newPath);
+        }
+        case "rename": {
+            // rename-asset expects (oldUrl: string, newUrl: string)
+            // We accept uuid + newName, resolve uuid to url and build new url
+            if (!(params === null || params === void 0 ? void 0 : params.uuid) || !(params === null || params === void 0 ? void 0 : params.newName)) {
+                throw new Error("assets.rename requires { uuid, newName }");
+            }
+            const oldUrl = await message.request("asset-db", "query-url", params.uuid);
+            if (!oldUrl) {
+                throw new Error(`Cannot resolve URL for asset: ${params.uuid}`);
+            }
+            const dir = oldUrl.substring(0, oldUrl.lastIndexOf("/"));
+            const newUrl = dir + "/" + params.newName;
+            return message.request("asset-db", "rename-asset", oldUrl, newUrl);
+        }
+        case "delete": {
+            // delete-asset expects (url: string)
+            if (!(params === null || params === void 0 ? void 0 : params.uuid)) {
+                throw new Error("assets.delete requires { uuid }");
+            }
+            const delUrl = await message.request("asset-db", "query-url", params.uuid);
+            if (!delUrl) {
+                throw new Error(`Cannot resolve URL for asset: ${params.uuid}`);
+            }
+            return message.request("asset-db", "delete-asset", delUrl);
+        }
+        case "getDependencies": {
+            // No direct message in Cocos 3.8.x; read meta and return dependency info
+            if (!(params === null || params === void 0 ? void 0 : params.uuid)) {
+                throw new Error("assets.getDependencies requires { uuid }");
+            }
+            const meta = await message.request("asset-db", "query-asset-meta", params.uuid);
+            if (!meta) {
+                throw new Error(`Asset meta not found: ${params.uuid}`);
+            }
+            // Return the meta which contains dependency information
+            return { uuid: params.uuid, meta };
+        }
+        case "reveal": {
+            // Reveal asset in OS file explorer using electron shell
+            if (!(params === null || params === void 0 ? void 0 : params.uuid)) {
+                throw new Error("assets.reveal requires { uuid }");
+            }
+            const filePath = await message.request("asset-db", "query-path", params.uuid);
+            if (!filePath) {
+                throw new Error(`Cannot resolve path for asset: ${params.uuid}`);
+            }
+            try {
+                const electron = process.mainModule.require("electron");
+                electron.shell.showItemInFolder(filePath);
+            }
+            catch {
+                throw new Error("electron.shell is not available in this environment");
+            }
+            return { ok: true, path: filePath };
+        }
+        case "request": {
+            // Raw passthrough escape hatch
+            if (!params || typeof params.method !== "string") {
+                throw new Error("assets.request requires { method, params? }");
+            }
+            const reqArgs = params.params;
+            if (Array.isArray(reqArgs)) {
+                return message.request("asset-db", params.method, ...reqArgs);
+            }
+            return message.request("asset-db", params.method, reqArgs);
+        }
+        default:
+            throw new Error(`Unknown assets method: ${method}`);
     }
-    if (assetdb && fnName && typeof assetdb[fnName] === "function") {
-        return assetdb[fnName](params);
-    }
-    if (assetdb && typeof assetdb[method] === "function") {
-        return assetdb[method](params);
-    }
-    if (lastErr) {
-        throw lastErr;
-    }
-    throw new Error("AssetDB API not available");
 }
 async function editorDispatch(method, params) {
     const message = Editor === null || Editor === void 0 ? void 0 : Editor.Message;

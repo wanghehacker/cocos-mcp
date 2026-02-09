@@ -393,20 +393,18 @@ def build_server(host: str, port: int) -> FastMCP:
 
     @mcp.tool()
     def assets_create(
-        asset_type: str, path: str, template: Optional[dict] = None
+        path: str, content: Optional[str] = None
     ) -> Any:
         """Create a new asset in the project.
 
         Args:
-            asset_type: Asset type (e.g. 'cc.Script', 'cc.Material',
-                        'cc.AnimationClip').
             path: Target db:// path including filename
                   (e.g. 'db://assets/scripts/Player.ts').
-            template: Optional template data for the asset content.
+            content: Optional file content for the asset.
         """
-        payload: Dict[str, Any] = {"type": asset_type, "path": path}
-        if template is not None:
-            payload["template"] = template
+        payload: Dict[str, Any] = {"path": path}
+        if content is not None:
+            payload["content"] = content
         return client.request("assets.create", payload)
 
     @mcp.tool()
@@ -457,12 +455,14 @@ def build_server(host: str, port: int) -> FastMCP:
 
     @mcp.tool()
     def assets_get_dependencies(uuid: str, deep: bool = False) -> Any:
-        """List assets that the given asset depends on.
+        """Get asset metadata including dependency information.
+
+        Note: Direct dependency query is not available in Cocos Creator 3.8.x.
+        Returns the asset meta which contains importer and sub-asset info.
 
         Args:
             uuid: UUID of the asset.
-            deep: If True, recursively resolve all transitive
-                  dependencies.
+            deep: Currently unused, reserved for future use.
         """
         return client.request(
             "assets.getDependencies", {"uuid": uuid, "deep": deep}
