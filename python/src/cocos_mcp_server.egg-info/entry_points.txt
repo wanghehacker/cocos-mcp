@@ -1,2 +1,0 @@
-[console_scripts]
-cocos-mcp-server = cocos_mcp_server.server:main

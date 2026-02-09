@@ -1,9 +1,0 @@
-pyproject.toml
-src/cocos_mcp_server/__init__.py
-src/cocos_mcp_server/server.py
-src/cocos_mcp_server.egg-info/PKG-INFO
-src/cocos_mcp_server.egg-info/SOURCES.txt
-src/cocos_mcp_server.egg-info/dependency_links.txt
-src/cocos_mcp_server.egg-info/entry_points.txt
-src/cocos_mcp_server.egg-info/requires.txt
-src/cocos_mcp_server.egg-info/top_level.txt

@@ -2,6 +2,8 @@ node_modules/
 package-lock.json
 
 python/__pycache__/
+python/src/**/__pycache__/
 python/.venv/
+python/src/*.egg-info/
 
 .claude/
