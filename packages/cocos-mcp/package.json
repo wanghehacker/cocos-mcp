@@ -1,0 +1,37 @@
+{
+  "package_version": 2,
+  "name": "cocos-mcp",
+  "version": "0.1.0",
+  "description": "MCP bridge for Cocos Creator 3.8.x",
+  "author": "cocos-mcp contributors",
+  "editor": ">=3.8.0",
+  "main": "./dist/main.js",
+  "contributions": {
+    "scene": {
+      "script": "./dist/scene.js"
+    },
+    "messages": {
+      "cocos-mcp:start": {
+        "public": true,
+        "description": "Start the MCP TCP bridge server",
+        "methods": ["start"]
+      },
+      "cocos-mcp:stop": {
+        "public": true,
+        "description": "Stop the MCP TCP bridge server",
+        "methods": ["stop"]
+      },
+      "cocos-mcp:status": {
+        "public": true,
+        "description": "Check if the MCP TCP bridge server is running",
+        "methods": ["status"]
+      }
+    },
+    "menu": [
+      {
+        "path": "i18n:menu.extension/MCP Bridge",
+        "message": "cocos-mcp:status"
+      }
+    ]
+  }
+}

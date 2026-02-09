@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "cocos-mcp": {
+      "command": "uv",
+      "args": ["run", "--directory", "python", "python", "cocos_mcp_server.py", "--port", "8787"]
+    }
+  }
+}
