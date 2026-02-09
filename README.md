@@ -46,7 +46,7 @@ Cocos MCP 完整支持 [Claude Code](https://docs.anthropic.com/en/docs/claude-c
 ### 快速添加（发布到 PyPI 后）
 
 ```sh
-claude mcp add cocos uvx cocos-mcp-server --port 8787
+claude mcp add cocos-mcp-server uvx cocos-mcp-server
 ```
 
 ### 自动发现
