@@ -1,0 +1,7 @@
+node_modules/
+package-lock.json
+
+python/__pycache__/
+python/.venv/
+
+.claude/
