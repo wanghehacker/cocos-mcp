@@ -300,10 +300,15 @@ def build_server(host: str, port: int) -> FastMCP:
           cc.RigidBody, cc.BoxCollider, cc.SphereCollider,
           cc.ParticleSystem, cc.UITransform, cc.Canvas
 
+        Custom script components registered via @ccclass are also
+        supported — pass the ccclass name directly
+        (e.g. 'WaterReflection', 'PlayerController').
+
         Args:
             uuid: UUID of the node to add the component to.
-            comp_type: Fully qualified component class name
-                       (e.g. 'cc.Sprite').
+            comp_type: Component class name. Use 'cc.Xxx' for built-in
+                       components or the @ccclass name for custom scripts
+                       (e.g. 'WaterReflection').
         """
         return client.request(
             "scene.addComponent", {"uuid": uuid, "type": comp_type}

@@ -32,6 +32,30 @@ function findNodeByUuid(root: Node, uuid: string): Node | null {
   return null;
 }
 
+/**
+ * Resolve a component type string to a Component constructor.
+ * Supports both built-in types (e.g. "cc.MeshRenderer") and custom
+ * script components registered via @ccclass (e.g. "WaterReflection").
+ */
+function resolveComponentType(type: string): any {
+  const cc = require("cc");
+
+  // 1. Try cc.js.getClassByName — works for both built-in and @ccclass names
+  const cls = cc.js.getClassByName(type);
+  if (cls) return cls;
+
+  // 2. For "cc.Xxx" style names, strip the prefix and retry
+  if (type.startsWith("cc.")) {
+    const shortName = type.slice(3);
+    const cls2 = cc.js.getClassByName(shortName);
+    if (cls2) return cls2;
+  }
+
+  // 3. Return the original string as a last resort — let the engine
+  //    throw its own error if it still can't find the type.
+  return type;
+}
+
 function getSceneRoot(): Node {
   const scene = director.getScene();
   if (!scene) {
@@ -171,7 +195,8 @@ async function addComponent(params: { uuid: string; type: string }) {
   if (!node) {
     throw new Error(`Node not found: ${params.uuid}`);
   }
-  const comp = node.addComponent(params.type as any);
+  const resolved = resolveComponentType(params.type);
+  const comp = node.addComponent(resolved as any);
   return { uuid: node.uuid, component: comp?.name || params.type };
 }
 
@@ -181,7 +206,8 @@ async function removeComponent(params: { uuid: string; type: string }) {
   if (!node) {
     throw new Error(`Node not found: ${params.uuid}`);
   }
-  const comp = node.getComponent(params.type as any);
+  const resolved = resolveComponentType(params.type);
+  const comp = node.getComponent(resolved as any);
   if (comp) {
     node.removeComponent(comp);
   }
@@ -242,7 +268,8 @@ async function getComponentProps(params: { uuid: string; type: string; props: st
   if (!node) {
     throw new Error(`Node not found: ${params.uuid}`);
   }
-  const comp = node.getComponent(params.type as any) as any;
+  const resolved = resolveComponentType(params.type);
+  const comp = node.getComponent(resolved as any) as any;
   if (!comp) {
     throw new Error(`Component not found: ${params.type}`);
   }
@@ -259,7 +286,8 @@ async function setComponentProps(params: { uuid: string; type: string; props: Re
   if (!node) {
     throw new Error(`Node not found: ${params.uuid}`);
   }
-  const comp = node.getComponent(params.type as any) as any;
+  const resolved = resolveComponentType(params.type);
+  const comp = node.getComponent(resolved as any) as any;
   if (!comp) {
     throw new Error(`Component not found: ${params.type}`);
   }
