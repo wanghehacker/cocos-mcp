@@ -101,8 +101,28 @@ async function assetsDispatch(method, params) {
     }
     switch (method) {
         case "find": {
-            // query-assets expects (pattern: string)
+            // query-assets expects a glob pattern (e.g. "db://assets/**/*.ts").
+            // If the pattern looks like an exact path (no wildcards), use
+            // query-asset-info for a precise single-asset lookup instead.
             const pattern = (params === null || params === void 0 ? void 0 : params.pattern) || "db://assets/**";
+            const isExactPath = !pattern.includes("*") && !pattern.includes("?");
+            if (isExactPath) {
+                // Exact path — return single-element array (or empty if not found)
+                try {
+                    const info = await message.request("asset-db", "query-asset-info", pattern);
+                    if (info) {
+                        const results = [info];
+                        if ((params === null || params === void 0 ? void 0 : params.type) && info.type !== params.type) {
+                            return [];
+                        }
+                        return results;
+                    }
+                }
+                catch {
+                    // Fall through to glob query
+                }
+                return [];
+            }
             const results = await message.request("asset-db", "query-assets", pattern);
             // Apply optional type filter on the client side
             if ((params === null || params === void 0 ? void 0 : params.type) && Array.isArray(results)) {
@@ -210,7 +230,15 @@ async function assetsDispatch(method, params) {
             if (Array.isArray(reqArgs)) {
                 return message.request("asset-db", params.method, ...reqArgs);
             }
-            return message.request("asset-db", params.method, reqArgs);
+            if (reqArgs !== undefined && reqArgs !== null && typeof reqArgs === "object") {
+                // Convert object values to positional arguments
+                return message.request("asset-db", params.method, ...Object.values(reqArgs));
+            }
+            // Single primitive value or undefined
+            if (reqArgs !== undefined) {
+                return message.request("asset-db", params.method, reqArgs);
+            }
+            return message.request("asset-db", params.method);
         }
         default:
             throw new Error(`Unknown assets method: ${method}`);

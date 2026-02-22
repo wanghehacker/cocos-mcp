@@ -393,18 +393,23 @@ def build_server(host: str, port: int) -> FastMCP:
 
     @mcp.tool()
     def assets_create(
-        path: str, content: Optional[str] = None
+        path: str, content: Optional[Any] = None
     ) -> Any:
         """Create a new asset in the project.
 
         Args:
             path: Target db:// path including filename
                   (e.g. 'db://assets/scripts/Player.ts').
-            content: Optional file content for the asset.
+            content: Optional file content for the asset. Can be a string
+                     or a dict/object (will be JSON-serialized).
         """
         payload: Dict[str, Any] = {"path": path}
         if content is not None:
-            payload["content"] = content
+            # If content is a dict/list, serialize to JSON string
+            if isinstance(content, (dict, list)):
+                payload["content"] = json.dumps(content, ensure_ascii=False, indent=2)
+            else:
+                payload["content"] = content
         return client.request("assets.create", payload)
 
     @mcp.tool()

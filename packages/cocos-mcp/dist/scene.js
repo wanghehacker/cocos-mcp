@@ -175,6 +175,60 @@ async function removeComponent(params) {
     }
     return { ok: true };
 }
+function safeSerialize(value, depth = 0) {
+    var _a, _b, _c;
+    if (depth > 3)
+        return "[max depth]";
+    if (value === null || value === undefined)
+        return value;
+    const t = typeof value;
+    if (t === "number" || t === "boolean" || t === "string")
+        return value;
+    if (t === "function")
+        return "[function]";
+    // Handle Cocos Color
+    if (((_a = value.constructor) === null || _a === void 0 ? void 0 : _a.name) === "Color" && typeof value.r === "number") {
+        return { r: value.r, g: value.g, b: value.b, a: value.a };
+    }
+    // Handle Cocos Vec2/Vec3/Vec4
+    if (typeof value.x === "number" && typeof value.y === "number") {
+        const v = { x: value.x, y: value.y };
+        if (typeof value.z === "number")
+            v.z = value.z;
+        if (typeof value.w === "number")
+            v.w = value.w;
+        return v;
+    }
+    // Handle Cocos Size
+    if (typeof value.width === "number" && typeof value.height === "number" && Object.keys(value).length <= 3) {
+        return { width: value.width, height: value.height };
+    }
+    // Handle Asset references (Material, Texture, etc.) — avoid circular refs
+    if (value._uuid || value.__uuid__) {
+        return { uuid: value._uuid || value.__uuid__, name: value.name || null, type: ((_b = value.constructor) === null || _b === void 0 ? void 0 : _b.name) || null };
+    }
+    // Handle arrays
+    if (Array.isArray(value)) {
+        return value.map((item) => safeSerialize(item, depth + 1));
+    }
+    // Handle plain-ish objects — try JSON.stringify as a fast check
+    try {
+        JSON.stringify(value);
+        return value;
+    }
+    catch {
+        // Object has circular refs; extract primitive-valued own properties
+        const safe = { _type: ((_c = value.constructor) === null || _c === void 0 ? void 0 : _c.name) || "Object" };
+        for (const key of Object.keys(value)) {
+            const v = value[key];
+            const vt = typeof v;
+            if (vt === "number" || vt === "boolean" || vt === "string" || v === null) {
+                safe[key] = v;
+            }
+        }
+        return safe;
+    }
+}
 async function getComponentProps(params) {
     const root = getSceneRoot();
     const node = findNodeByUuid(root, params.uuid);
@@ -187,7 +241,7 @@ async function getComponentProps(params) {
     }
     const out = {};
     for (const prop of params.props || []) {
-        out[prop] = comp[prop];
+        out[prop] = safeSerialize(comp[prop]);
     }
     return out;
 }
@@ -211,9 +265,13 @@ async function execute(params) {
     if (!params || typeof params.code !== "string") {
         throw new Error("execute requires { code, args? }");
     }
+    // Use AsyncFunction so user code can use top-level await.
+    // Inject the real cc engine module (require('cc')) instead of globalThis.
     // eslint-disable-next-line no-new-func
-    const fn = new Function("cc", "args", params.code);
-    return fn(globalThis, params.args || []);
+    const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+    const ccModule = require("cc");
+    const fn = new AsyncFunction("cc", "args", params.code);
+    return fn(ccModule, params.args || []);
 }
 // ---------------------------------------------------------------------------
 // UI convenience methods

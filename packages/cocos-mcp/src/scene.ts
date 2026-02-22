@@ -188,6 +188,54 @@ async function removeComponent(params: { uuid: string; type: string }) {
   return { ok: true };
 }
 
+function safeSerialize(value: any, depth: number = 0): any {
+  if (depth > 3) return "[max depth]";
+  if (value === null || value === undefined) return value;
+  const t = typeof value;
+  if (t === "number" || t === "boolean" || t === "string") return value;
+  if (t === "function") return "[function]";
+
+  // Handle Cocos Color
+  if (value.constructor?.name === "Color" && typeof value.r === "number") {
+    return { r: value.r, g: value.g, b: value.b, a: value.a };
+  }
+  // Handle Cocos Vec2/Vec3/Vec4
+  if (typeof value.x === "number" && typeof value.y === "number") {
+    const v: Record<string, number> = { x: value.x, y: value.y };
+    if (typeof value.z === "number") v.z = value.z;
+    if (typeof value.w === "number") v.w = value.w;
+    return v;
+  }
+  // Handle Cocos Size
+  if (typeof value.width === "number" && typeof value.height === "number" && Object.keys(value).length <= 3) {
+    return { width: value.width, height: value.height };
+  }
+  // Handle Asset references (Material, Texture, etc.) — avoid circular refs
+  if (value._uuid || value.__uuid__) {
+    return { uuid: value._uuid || value.__uuid__, name: value.name || null, type: value.constructor?.name || null };
+  }
+  // Handle arrays
+  if (Array.isArray(value)) {
+    return value.map((item: any) => safeSerialize(item, depth + 1));
+  }
+  // Handle plain-ish objects — try JSON.stringify as a fast check
+  try {
+    JSON.stringify(value);
+    return value;
+  } catch {
+    // Object has circular refs; extract primitive-valued own properties
+    const safe: Record<string, any> = { _type: value.constructor?.name || "Object" };
+    for (const key of Object.keys(value)) {
+      const v = value[key];
+      const vt = typeof v;
+      if (vt === "number" || vt === "boolean" || vt === "string" || v === null) {
+        safe[key] = v;
+      }
+    }
+    return safe;
+  }
+}
+
 async function getComponentProps(params: { uuid: string; type: string; props: string[] }) {
   const root = getSceneRoot();
   const node = findNodeByUuid(root, params.uuid);
@@ -200,7 +248,7 @@ async function getComponentProps(params: { uuid: string; type: string; props: st
   }
   const out: Record<string, any> = {};
   for (const prop of params.props || []) {
-    out[prop] = comp[prop];
+    out[prop] = safeSerialize(comp[prop]);
   }
   return out;
 }
@@ -226,9 +274,13 @@ async function execute(params: { code: string; args?: any[] }) {
   if (!params || typeof params.code !== "string") {
     throw new Error("execute requires { code, args? }");
   }
+  // Use AsyncFunction so user code can use top-level await.
+  // Inject the real cc engine module (require('cc')) instead of globalThis.
   // eslint-disable-next-line no-new-func
-  const fn = new Function("cc", "args", params.code);
-  return fn(globalThis as any, params.args || []);
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const ccModule = require("cc");
+  const fn = new AsyncFunction("cc", "args", params.code);
+  return fn(ccModule, params.args || []);
 }
 
 // ---------------------------------------------------------------------------
