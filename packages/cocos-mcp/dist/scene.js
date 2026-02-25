@@ -1,6 +1,57 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const cc_1 = require("cc");
+const sceneLogBuffer = [];
+const MAX_LOG_ENTRIES = 500;
+const _origConsole = {
+    log: console.log.bind(console),
+    info: console.info.bind(console),
+    warn: console.warn.bind(console),
+    error: console.error.bind(console),
+};
+let _consolePatchInstalled = false;
+function pushLog(level, args) {
+    const message = args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ");
+    sceneLogBuffer.push({ timestamp: Date.now(), level, message });
+    if (sceneLogBuffer.length > MAX_LOG_ENTRIES) {
+        sceneLogBuffer.splice(0, sceneLogBuffer.length - MAX_LOG_ENTRIES);
+    }
+}
+function installConsolePatch() {
+    if (_consolePatchInstalled)
+        return;
+    _consolePatchInstalled = true;
+    console.log = (...args) => { pushLog("log", args); _origConsole.log(...args); };
+    console.info = (...args) => { pushLog("info", args); _origConsole.info(...args); };
+    console.warn = (...args) => { pushLog("warn", args); _origConsole.warn(...args); };
+    console.error = (...args) => { pushLog("error", args); _origConsole.error(...args); };
+}
+function uninstallConsolePatch() {
+    if (!_consolePatchInstalled)
+        return;
+    _consolePatchInstalled = false;
+    console.log = _origConsole.log;
+    console.info = _origConsole.info;
+    console.warn = _origConsole.warn;
+    console.error = _origConsole.error;
+}
+async function getLogs(params) {
+    var _a;
+    let entries = sceneLogBuffer.slice();
+    if (params === null || params === void 0 ? void 0 : params.level) {
+        const lvl = params.level.toLowerCase();
+        entries = entries.filter((e) => e.level === lvl);
+    }
+    if (params === null || params === void 0 ? void 0 : params.pattern) {
+        const re = new RegExp(params.pattern, "i");
+        entries = entries.filter((e) => re.test(e.message));
+    }
+    const count = (_a = params === null || params === void 0 ? void 0 : params.count) !== null && _a !== void 0 ? _a : 100;
+    if (count > 0 && entries.length > count) {
+        entries = entries.slice(-count);
+    }
+    return entries;
+}
 function buildNodeInfo(node, path) {
     const nextPath = path ? `${path}/${node.name}` : node.name;
     return {
@@ -668,10 +719,10 @@ async function getPrefabInfo(params) {
     };
 }
 function load() {
-    // Scene script loaded
+    installConsolePatch();
 }
 function unload() {
-    // Scene script unloaded
+    uninstallConsolePatch();
 }
 module.exports = {
     load,
@@ -705,6 +756,8 @@ module.exports = {
         configureParticleSystem,
         // Prefab
         getPrefabInfo,
+        // Logs
+        getLogs,
     },
 };
 //# sourceMappingURL=scene.js.map
