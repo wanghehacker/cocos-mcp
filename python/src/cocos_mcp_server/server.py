@@ -545,6 +545,54 @@ def build_server(host: str, port: int) -> FastMCP:
         """Redo the last undone operation in the scene editor."""
         return client.request("editor.redo")
 
+    @mcp.tool()
+    def editor_get_logs(
+        level: Optional[str] = None,
+        count: int = 100,
+        pattern: Optional[str] = None,
+    ) -> Any:
+        """Read recent console log entries from the Cocos Creator editor main process.
+
+        Returns a list of log entries, each with timestamp (ms), level, and message.
+        Useful for debugging editor extension issues or monitoring editor activity.
+
+        Args:
+            level: Optional filter by log level ('log', 'info', 'warn', 'error').
+            count: Maximum number of entries to return (default 100, most recent first).
+            pattern: Optional regex pattern to filter log messages (case-insensitive).
+        """
+        payload: Dict[str, Any] = {"count": count}
+        if level:
+            payload["level"] = level
+        if pattern:
+            payload["pattern"] = pattern
+        result = client.request("editor.getLogs", payload)
+        return json.dumps(result, indent=2, ensure_ascii=False)
+
+    @mcp.tool()
+    def scene_get_logs(
+        level: Optional[str] = None,
+        count: int = 100,
+        pattern: Optional[str] = None,
+    ) -> Any:
+        """Read recent console log entries from the Cocos Creator scene (engine renderer) process.
+
+        Returns a list of log entries, each with timestamp (ms), level, and message.
+        Useful for debugging scene scripts, component logic, or rendering issues.
+
+        Args:
+            level: Optional filter by log level ('log', 'info', 'warn', 'error').
+            count: Maximum number of entries to return (default 100, most recent first).
+            pattern: Optional regex pattern to filter log messages (case-insensitive).
+        """
+        payload: Dict[str, Any] = {"count": count}
+        if level:
+            payload["level"] = level
+        if pattern:
+            payload["pattern"] = pattern
+        result = client.request("scene.getLogs", payload)
+        return json.dumps(result, indent=2, ensure_ascii=False)
+
     # ------------------------------------------------------------------
     # UI convenience methods
     # ------------------------------------------------------------------
