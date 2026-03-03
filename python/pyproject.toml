@@ -1,6 +1,6 @@
 [project]
 name = "cocos-mcp-server"
-version = "0.1.1"
+version = "0.1.2"
 description = "MCP server bridge for Cocos Creator 3.8.x"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -33,6 +33,11 @@ name = "testpypi"
 url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
+
+[dependency-groups]
+dev = [
+    "twine>=6.2.0",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/wanghehacker/cocos-mcp"
